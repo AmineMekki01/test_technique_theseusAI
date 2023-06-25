@@ -1,4 +1,7 @@
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, UploadFile, File
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+
 from pydantic import BaseModel
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
@@ -7,46 +10,60 @@ from text_processor import create_chunks
 from chatbot import create_embeddings, create_vector_store, chunks_similarity_research, get_answer
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="./static"), name="static")
+
+# Instantiate the jinja2 class
+templates = Jinja2Templates(directory="./templates")
 
 class Query(BaseModel):
     question: str
 
 # Using LRU cache to store the precomputed results of expensive functions
 @lru_cache(maxsize=None)
-def get_vector_store() -> object:
+def get_vector_store(text: str) -> object:
     """
-    Get the vector store for the transcript.
-    
+    Get the vector store for the text.
+
+    Parameters:
+    ----------
+    text : str
+        The text content to create the vector store from.
+
     Returns:
     -------
     vector_store : object
-    
     """
-    global_text = ""
-    with open("./../data/1_transcript.txt", "r", encoding="utf-8") as file:
-        global_text = file.read()
-
     embeddings = create_embeddings()
-    chunks = create_chunks(global_text, 500)
+    chunks = create_chunks(text, 500)
     vector_store = create_vector_store(chunks, embeddings)
     return vector_store
 
 # Background task to initialize the vector store
 executor = ThreadPoolExecutor(max_workers=1)
-executor.submit(get_vector_store)
+vector_store = None  # Variable to store the vector store
 
 @app.get("/")
-def home():
-    return {"Message": "Hello World! :)"}
+def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/about")
-def about():
-    return {
-        "Content": "This task, assigned by TheseusAI, involves developing FastAPI endpoints. These endpoints accept a query, then find the most suitable response from the top three chunks that are most similar to the query. Each of these chunks contains no more than 500 tokens, extracted from a text file."
-    }
+def about(request: Request):
+    return templates.TemplateResponse("about.html", {"request": request})
+
+@app.get("/query")
+async def query(request: Request):
+    return templates.TemplateResponse("query.html", {"request": request})
+
+@app.post("/upload_file")
+async def upload_file(file: UploadFile = File(...)):
+    global vector_store  # Use the global variable
+    contents = await file.read()
+    text = contents.decode("utf-8")  # Convert bytes to string
+    vector_store = get_vector_store(text)  # Update the vector store with the text
+    return {"filename": file.filename}
 
 @app.post("/get_answer")
-def get_answer_endpoint(query: Query) -> Response:
+def get_answer_endpoint(query: Query):
     """
     Get the answer to the query from the most similar chunks.
 
@@ -60,7 +77,6 @@ def get_answer_endpoint(query: Query) -> Response:
     response : Response
         The HTTP response containing the answer.
     """
-    vector_store = get_vector_store()
     query_similar_chunks = chunks_similarity_research(vector_store, query.question, 3)
     answer = get_answer(query.question, query_similar_chunks)
-    return Response(content=answer, media_type="text/plain")
+    return {"answer": answer}
