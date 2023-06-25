@@ -6,7 +6,7 @@ from langchain.chains.question_answering import load_qa_chain
 
 
 # import from local modules 
-from .utils import get_api_key, setup_openai_api
+from utils import get_api_key, setup_openai_api
 
 # OpenAI API
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -36,7 +36,7 @@ def create_embeddings(model_name : str = "text-embedding-ada-002") -> object:
     openai_api_key= get_api_key()
     )
   
-def create_vectore_store(chunks : list[str], embeddings : object) -> object:
+def create_vector_store(chunks : list[str], embeddings : object) -> object:
     
     """
         Create a vector store from a list of chunks and an embedding model using FAISS.
