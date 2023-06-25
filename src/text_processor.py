@@ -2,7 +2,24 @@ import tiktoken
 import re
 
 
-def create_chunks(text : str, max_tokens: int = 500):
+def create_chunks(text : str, max_tokens: int = 500) -> list[str]:
+    """
+    Creates chunks of text that are less than or equal to the maximum number of tokens.
+
+    Parameters :
+    ----------
+    text : str
+        The text to split into chunks.
+        
+    max_tokens : int
+        The maximum number of tokens per chunk.
+        
+    Returns
+    -------
+    
+    A list containing all of the chunks created from splitting `text` up.
+    
+    """
     
     # Initialize the tiktoken tokenizer using cl100k_base (chatGPT-3.5)
     encoding = tiktoken.get_encoding("cl100k_base")
