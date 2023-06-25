@@ -1,0 +1,9 @@
+openai
+tiktoken
+fastapi
+uvicorn
+pydantic
+chromadb
+beautifulsoup4
+faiss-cpu
+langchain==0.0.137
