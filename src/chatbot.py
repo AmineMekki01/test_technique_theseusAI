@@ -5,6 +5,7 @@ from langchain.llms import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 
 
+
 # import from local modules 
 from utils import get_api_key, setup_openai_api
 
@@ -36,7 +37,7 @@ def create_embeddings(model_name : str = "text-embedding-ada-002") -> object:
     openai_api_key= get_api_key()
     )
   
-def create_vector_store(chunks : list[str], embeddings : object) -> object:
+def create_vector_store(chunks : list[str], embeddings : OpenAIEmbeddings) -> FAISS:
     
     """
         Create a vector store from a list of chunks and an embedding model using FAISS.
@@ -60,7 +61,7 @@ def create_vector_store(chunks : list[str], embeddings : object) -> object:
 
 
 
-def chunks_similarity_research(vectorStore : object, query : str, chunks_number : int = 3) -> list[object]:
+def chunks_similarity_research(vectorStore : FAISS, query : str, chunks_number : int = 3) -> list:
     
     """
         Find the most similar chunks to the query.
@@ -85,7 +86,7 @@ def chunks_similarity_research(vectorStore : object, query : str, chunks_number 
     return vectorStore.similarity_search(query, k=chunks_number)  
 
 
-def get_answer(query : str, similar_chunks_object : list[object]) -> str:
+def get_answer(query : str, similar_chunks_object : list) -> str:
     
     """
         Get the answer to the query from the most similar chunks.
