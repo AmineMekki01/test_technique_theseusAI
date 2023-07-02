@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Request, UploadFile, HTTPException, Depends, File
-
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 
@@ -10,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from text_processor import create_chunks
 from chatbot import create_embeddings, create_vector_store, chunks_similarity_research, get_answer
+from utils import parse_pdf, get_file_type, FileType
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="./static"), name="static")
@@ -120,10 +120,21 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, str]:
     response : Response
         The response containing the filename.
         
-    """
-    contents = await file.read()
-    text = contents.decode("utf-8")
-    vector_store.store = get_vector_store(text)
+    """ 
+    file_type = get_file_type(file.filename)
+
+    match file_type:
+        case FileType.PDF:
+            text = parse_pdf(file)
+        case FileType.TXT:
+            contents = await file.read()
+            text = contents.decode("utf-8")
+            
+        case None:
+            print("Invalid file type. It must either a txt file or a pdf file.")
+        case _:
+            print("Unexpected error")
+    vector_store.store = get_vector_store(text) 
     return {"filename": file.filename}
 
 
@@ -140,7 +151,8 @@ def get_answer_endpoint(query: Query) -> dict[str, str]:
     Returns:
     -------
     response : Response
-        The HTTP response containing the answer.
+        The response containing the answer.
+
     """
     if vector_store.store is None:
         raise HTTPException(status_code=400, detail="No file uploaded yet")

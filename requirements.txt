@@ -7,4 +7,5 @@ chromadb==0.3.26
 beautifulsoup4==4.12.2
 faiss-cpu==1.7.4
 python-multipart==0.0.6
-langchain==0.0.137
+pypdf==3.11.1
+langchain==0.0.220
